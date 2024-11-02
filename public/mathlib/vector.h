@@ -2175,7 +2175,7 @@ inline void AngularImpulseToQAngle( const AngularImpulse &impulse, QAngle &angle
 
 FORCEINLINE vec_t InvRSquared( float const *v )
 {
-#if defined(__i386__) || defined(_M_IX86)
+#if (defined(__i386__) || defined(_M_IX86)) && !defined(__EMSCRIPTEN__)
 	float sqrlen = v[0]*v[0]+v[1]*v[1]+v[2]*v[2] + 1.0e-10f, result;
 	_mm_store_ss(&result, _mm_rcp_ss( _mm_max_ss( _mm_set_ss(1.0f), _mm_load_ss(&sqrlen) ) ));
 	return result;
@@ -2189,7 +2189,7 @@ FORCEINLINE vec_t InvRSquared( const Vector &v )
 	return InvRSquared(&v.x);
 }
 
-#if defined(__i386__) || defined(_M_IX86)
+#if (defined(__i386__) || defined(_M_IX86)) && !defined(__EMSCRIPTEN__)
 inline void _SSE_RSqrtInline( float a, float* out )
 {
 	__m128  xx = _mm_load_ss( &a );
@@ -2213,7 +2213,7 @@ FORCEINLINE float VectorNormalize( Vector& vec )
 	#endif
 #endif
 
-#if defined( DO_SSE_OPTIMIZATION )
+#if defined( DO_SSE_OPTIMIZATION ) && !defined(__EMSCRIPTEN__)
 	float sqrlen = vec.LengthSqr() + 1.0e-10f, invlen;
 	_SSE_RSqrtInline(sqrlen, &invlen);
 	vec.x *= invlen;

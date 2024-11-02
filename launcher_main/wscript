@@ -5,13 +5,15 @@ from waflib import Utils
 import os
 
 top = '.'
-PROJECT_NAME = 'hl2_launcher'
+PROJECT_NAME = 'hl2_launcher.js'
 
 def options(opt):
 	# stub
 	return
 
 def configure(conf):
+	conf.env.append_unique('LINKFLAGS', ['-sSIDE_MODULE=0', '-sMAIN_MODULE=2'])
+	conf.env.append_unique('CXXFLAGS', ['-sSIDE_MODULE=0', '-sMAIN_MODULE=2'])
 	return
 
 def build(bld):

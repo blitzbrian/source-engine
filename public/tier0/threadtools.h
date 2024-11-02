@@ -233,7 +233,7 @@ inline void ThreadPause()
 {
 #if defined( COMPILER_PS3 )
 	__db16cyc();
-#elif defined( COMPILER_GCC ) && (defined( __i386__ ) || defined( __x86_64__ ))
+#elif defined( COMPILER_GCC ) && (defined( __i386__ ) || defined( __x86_64__ )) && !defined(__EMSCRIPTEN__)
 	__asm __volatile( "pause" );
 #elif defined( POSIX )
         sched_yield();

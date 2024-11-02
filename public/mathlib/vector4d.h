@@ -23,7 +23,7 @@
 #include "tier0/dbg.h"
 #include "mathlib/math_pfns.h"
 
-#if defined (__arm__) || defined(__aarch64__)
+#if defined (__arm__) || defined(__aarch64__) || defined(__EMSCRIPTEN__)
 #include "sse2neon.h"
 #endif
 
@@ -668,7 +668,7 @@ inline void Vector4DWeightMADSSE( vec_t w, Vector4DAligned const& vInA, Vector4D
 {
 	Assert( vInA.IsValid() && vInB.IsValid() && IsFinite(w) );
 
-#if !defined( _X360 )
+#if !defined( _X360 ) || defined(__EMSCRIPTEN__)
 	// Replicate scalar float out to 4 components
     __m128 packed = _mm_set1_ps( w );
 

@@ -180,8 +180,11 @@ def define_platform(conf):
 	conf.env.DEDICATED = conf.options.DEDICATED
 	conf.env.TESTS = conf.options.TESTS
 	conf.env.TOGLES = conf.options.TOGLES
+	conf.env.EMSCRIPTEN = conf.options.EMSCRIPTEN
 	conf.env.GL = conf.options.GL and not conf.options.TESTS and not conf.options.DEDICATED
 	conf.env.OPUS = conf.options.OPUS
+	conf.env.DEST_CPU
+
 
 	arch32 = conf.run_test(CPP_32BIT_CHECK, 'Testing 32bit support')
 	arch64 = conf.run_test(CPP_64BIT_CHECK, 'Testing 64bit support')
@@ -216,11 +219,21 @@ def define_platform(conf):
 	if arch64:
 		conf.define('PLATFORM_64BITS', 1)
 
+	if conf.env.EMSCRIPTEN:
+		conf.env.append_unique('DEFINES', [
+			'LINUX=1', '_LINUX=1',
+			'POSIX=1', '_POSIX=1', 'PLATFORM_POSIX=1',
+			'GNUC',
+			'NO_HOOK_MALLOC',
+			'_DLL_EXT=.so',
+			'__arm__=1'
+		])
+
 	if conf.env.DEST_OS == 'linux':
 		conf.define('_GLIBCXX_USE_CXX11_ABI',0)
 		conf.env.append_unique('DEFINES', [
 			'LINUX=1', '_LINUX=1',
-			'POSIX=1', '_POSIX=1', 'PLATFORM_POSIX=1',
+			'POSIX=1', '_POSIX=1',
 			'GNUC',
 			'NO_HOOK_MALLOC',
 			'_DLL_EXT=.so'
@@ -315,6 +328,9 @@ def options(opt):
 	grp.add_option('--togles', action = 'store_true', dest = 'TOGLES', default = False,
 		help = 'build engine with ToGLES [default: %default]')
 
+	grp.add_option('--emscripten', action = 'store_true', dest = 'EMSCRIPTEN', default = False,
+		help = 'build for emscripten [default: %default]')
+
 	# TODO(nillerusr): add wscript for opus building
 	grp.add_option('--enable-opus', action = 'store_true', dest = 'OPUS', default = False,
 		help = 'build engine with Opus voice codec [default: %default]')
@@ -330,7 +346,9 @@ def options(opt):
 	opt.load('reconfigure')
 
 def check_deps(conf):
-	if conf.env.DEST_OS != 'win32':
+	if conf.env.EMSCRIPTEN:
+		print('Skipping checks because of emscripten')
+	elif conf.env.DEST_OS != 'win32':
 		conf.check_cc(lib='dl', mandatory=False)
 		conf.check_cc(lib='bz2', mandatory=True)
 		conf.check_cc(lib='rt', mandatory=False)
@@ -382,8 +400,9 @@ def check_deps(conf):
 
 	if conf.options.TESTS:
 		return
-
-	if conf.env.DEST_OS != 'android':
+	if conf.env.EMSCRIPTEN:
+		print('Skipping checks because of emscripten')
+	elif conf.env.DEST_OS != 'android':
 		if conf.env.DEST_OS != 'win32':
 			if conf.options.SDL:
 				conf.check_cfg(package='sdl2', uselib_store='SDL2', args=['--cflags', '--libs'])
@@ -500,8 +519,9 @@ def configure(conf):
 
 	if conf.options.SANITIZE:
 		flags += ['-fsanitize=%s'%conf.options.SANITIZE, '-fno-sanitize=vptr']
-
-	if conf.env.DEST_OS != 'win32':
+	if conf.env.EMSCRIPTEN:
+		flags += ['-pipe', '-fPIC', '-g0', '-O3']
+	elif conf.env.DEST_OS != 'win32':
 		flags += ['-pipe', '-fPIC', '-L'+os.path.abspath('.')+'/lib/'+conf.env.DEST_OS+'/'+conf.env.DEST_CPU+'/']
 	if conf.env.COMPILER_CC != 'msvc':
 		flags += ['-pthread']
@@ -518,7 +538,7 @@ def configure(conf):
 		]
 
 		flags += ['-funwind-tables', '-g']
-	elif conf.env.COMPILER_CC != 'msvc' and conf.env.DEST_OS != 'darwin' and conf.env.DEST_CPU in ['x86', 'x86_64']:
+	elif conf.env.COMPILER_CC != 'msvc' and conf.env.DEST_OS not in ['darwin', 'freebsd'] and conf.env.DEST_CPU in ['x86', 'x86_64']:
 		flags += ['-march=core2']
 
 	if conf.env.DEST_CPU in ['x86', 'x86_64']:
@@ -577,6 +597,10 @@ def configure(conf):
 	if conf.env.DEST_OS != 'win32':
 		cxxflags += ['-std=c++11','-fpermissive']
 
+	if conf.env.EMSCRIPTEN:
+		cxxflags += ['-sUSE_SDL=2', '-sUSE_FREETYPE=1', '-sUSE_LIBJPEG=1', '-sSIDE_MODULE=2', '-g', '-g3', '-O0']
+		linkflags += ['-sUSE_SDL=2', '-sUSE_FREETYPE=1', '-sUSE_LIBJPEG=1', '-sSIDE_MODULE=2', '-g', '-g3', '-O0']
+
 	if conf.env.COMPILER_CC == 'gcc':
 		conf.define('COMPILER_GCC', 1)
 	elif conf.env.COMPILER_CC == 'msvc':
@@ -625,7 +649,8 @@ def configure(conf):
 		conf.add_subproject(projects['game'])
 
 def build(bld):
-	os.environ["CCACHE_DIR"] = os.path.abspath('.ccache/'+bld.env.COMPILER_CC+'/'+bld.env.DEST_OS+'/'+bld.env.DEST_CPU)
+	# Fuck ccache
+	# os.environ["CCACHE_DIR"] = os.path.abspath('.ccache/'+bld.env.COMPILER_CC+'/'+bld.env.DEST_OS+'/'+bld.env.DEST_CPU)
 
 	if bld.env.DEST_OS in ['win32', 'android']:
 		sdl_name = 'SDL2.dll' if bld.env.DEST_OS == 'win32' else 'libSDL2.so'

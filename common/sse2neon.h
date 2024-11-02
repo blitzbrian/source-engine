@@ -103,7 +103,7 @@
 
 /* Architecture-specific build options */
 /* FIXME: #pragma GCC push_options is only available on GCC */
-#if defined(__GNUC__)
+#if defined(__GNUC__) && !defined(__EMSCRIPTEN__)
 #if defined(__arm__) && __ARM_ARCH == 7
 /* According to ARM C Language Extensions Architecture specification,
  * __ARM_NEON is defined to a value indicating the Advanced SIMD (NEON)
@@ -7050,7 +7050,7 @@ FORCE_INLINE __m128i _mm_shuffle_epi8(__m128i a, __m128i b)
         vandq_u8(idx, vdupq_n_u8(0x8F));  // avoid using meaningless bits
 #if defined(__aarch64__)
     return vreinterpretq_m128i_s8(vqtbl1q_s8(tbl, idx_masked));
-#elif defined(__GNUC__)
+#elif defined(__GNUC__) && !defined(__EMSCRIPTEN__)
     int8x16_t ret;
     // %e and %f represent the even and odd D registers
     // respectively.

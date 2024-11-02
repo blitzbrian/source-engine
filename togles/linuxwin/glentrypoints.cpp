@@ -43,7 +43,7 @@
 #include "tier1.h"
 #include "tier2/tier2.h"
 
-#if defined(_LINUX) && !defined(__ANDROID__)
+#if defined(_LINUX) && !defined(__ANDROID__) && !defined(__EMSCRIPTEN__)
 #include <GL/glx.h>
 #endif
 

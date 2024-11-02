@@ -7,23 +7,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
-#ifdef LINUX
-#include <linux/sysctl.h>
-#else
-#include <sys/sysctl.h>
-# ifdef __APPLE__
-#  define CPUFREQ_SYSCTL "hw.cpufrequency_max"
-# else
-#  define CPUFREQ_SYSCTL "dev.cpu.0.freq"
-# endif
-#endif
 #include <sys/time.h>
+#include <time.h>
 #include <unistd.h>
 #include <tier0/platform.h>
 #include <errno.h>
 
+#ifndef __EMSCRIPTEN__
 #define rdtsc(x) \
 	__asm__ __volatile__ ("rdtsc" : "=A" (x))
+#endif
 
 class TimeVal
 {
@@ -124,7 +117,7 @@ uint64 CalculateCPUFreq()
 		}
 	}
 
-#if !defined(__arm__) && !defined(__aarch64__)
+#if !defined(__arm__) && !defined(__aarch64__) && !defined(__EMSCRIPTEN__)
 	// fallback mechanism to calculate when failed
 	// Compute the period. Loop until we get 3 consecutive periods that
 	// are the same to within a small error. The error is chosen

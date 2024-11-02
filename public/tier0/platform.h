@@ -45,6 +45,9 @@
 #define __STDC_LIMIT_MACROS
 #include <stdint.h>
 
+#include <sys/time.h>
+#include <time.h>
+
 #include "wchartypes.h"
 #include "basetypes.h"
 #include "tier0/valve_off.h"
@@ -148,7 +151,7 @@
 	#else
 		#define IsPlatformOpenGL() false
 	#endif
-#elif defined(POSIX)
+#else
 	#define IsPC() true
 	#define IsWindows() false
 	#define IsConsole() false
@@ -174,8 +177,6 @@
 
 	#define IsPosix() true
 	#define IsPlatformOpenGL() true
-#else
-	#error
 #endif
 
 typedef unsigned char uint8;
@@ -523,7 +524,7 @@ typedef void * HINSTANCE;
 #define ALIGN16_POST
 #define ALIGN32_POST
 #define ALIGN128_POST
-#elif defined( GNUC )
+#else defined( GNUC )
 // gnuc has the align decoration at the end
 #define ALIGN4
 #define ALIGN8 
@@ -536,8 +537,6 @@ typedef void * HINSTANCE;
 #define ALIGN16_POST DECL_ALIGN(16)
 #define ALIGN32_POST DECL_ALIGN(32)
 #define ALIGN128_POST DECL_ALIGN(128)
-#else
-#error
 #endif
 
 // !!! NOTE: if you get a compile error here, you are using VALIGNOF on an abstract type :NOTE !!!
@@ -570,7 +569,7 @@ typedef void * HINSTANCE;
 #elif defined(OSX)
 	#define mallocsize( _p )	( malloc_size( _p ) )
 #else
-#error
+	#define stackalloc( _size )		alloca( ALIGN_VALUE( _size, 16 ) )
 #endif
 #elif defined ( _WIN32 )
 	#define stackalloc( _size )		_alloca( ALIGN_VALUE( _size, 16 ) )
@@ -642,7 +641,7 @@ typedef void * HINSTANCE;
 
 	#define DLL_LOCAL
 
-#elif defined GNUC
+#else
 // Used for dll exporting and importing
 #define  DLL_EXPORT   extern "C" __attribute__ ((visibility("default")))
 #define  DLL_IMPORT   extern "C"
@@ -656,9 +655,6 @@ typedef void * HINSTANCE;
 #define  DLL_GLOBAL_IMPORT   extern
 
 #define  DLL_LOCAL __attribute__ ((visibility("hidden")))
-
-#else
-#error "Unsupported Platform."
 #endif
 
 // Used for standard calling conventions
@@ -1250,7 +1246,7 @@ inline uint64 Plat_Rdtsc()
     __asm rdtsc;
 	__asm ret;
   #endif
-#elif defined( __i386__ )
+#elif defined( __i386__ ) && !defined(__EMSCRIPTEN__)
 	uint64 val;
 	__asm__ __volatile__ ( "rdtsc" : "=A" (val) );
 	return val;
@@ -1259,7 +1255,9 @@ inline uint64 Plat_Rdtsc()
 	__asm__ __volatile__ ( "rdtsc" : "=a" (lo), "=d" (hi));
 	return ( ( ( uint64 )hi ) << 32 ) | lo;
 #else
-	#error
+	struct timespec t;
+	clock_gettime( CLOCK_REALTIME, &t);
+	return t.tv_sec * 1000000000ULL + t.tv_nsec;
 #endif
 }
 
